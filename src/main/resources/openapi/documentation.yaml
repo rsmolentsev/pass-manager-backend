@@ -51,6 +51,22 @@ paths:
                     description: JWT token
         '401':
           description: Invalid credentials
+  /change-master-password:
+    put:
+      summary: Change master password
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeMasterPasswordRequest'
+      responses:
+        '200':
+          description: Master password changed successfully
+        '401':
+          description: Invalid current password
   /passwords:
     get:
       summary: Get all password entries
@@ -86,6 +102,62 @@ paths:
                   id:
                     type: integer
                     description: Password entry ID
+  /passwords/{id}:
+    get:
+      summary: Get password entry by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Password entry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PasswordEntry'
+        '404':
+          description: Password entry not found
+    put:
+      summary: Update password entry
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordEntryRequest'
+      responses:
+        '200':
+          description: Password entry updated successfully
+        '404':
+          description: Password entry not found
+    delete:
+      summary: Delete password entry
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Password entry deleted successfully
+        '404':
+          description: Password entry not found
   /settings:
     get:
       summary: Get user settings
@@ -98,7 +170,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserSettings'
-    post:
+    put:
       summary: Update user settings
       security:
         - bearerAuth: []
@@ -142,6 +214,18 @@ components:
         password:
           type: string
           description: Master password
+    ChangeMasterPasswordRequest:
+      type: object
+      required:
+        - oldMasterPassword
+        - newMasterPassword
+      properties:
+        oldMasterPassword:
+          type: string
+          description: Current master password
+        newMasterPassword:
+          type: string
+          description: New master password
     PasswordEntry:
       type: object
       required:
