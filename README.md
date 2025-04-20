@@ -108,6 +108,10 @@ JWT_LIFETIME_MINUTES=60
 
 ## Примеры запросов
 
+### Swagger UI
+
+Документация API доступна по адресу: `http://localhost:8080/swagger`
+
 ### Регистрация пользователя
 ```bash
 curl -X POST http://localhost:8080/register \
@@ -292,65 +296,3 @@ docker-compose up -d
 ```
 
 4. Приложение будет доступно по адресу: `http://localhost:8080`
-
-## Swagger UI
-
-Документация API доступна по адресу: `http://localhost:8080/swagger`
-
-## Тестирование API
-
-### Регистрация пользователя
-```bash
-curl -X POST http://localhost:8080/register \
-  -H "Content-Type: application/json" \
-  -d '{"username":"testuser","masterPassword":"password123"}'
-```
-
-### Вход в систему
-```bash
-curl -X POST http://localhost:8080/login \
-  -H "Content-Type: application/json" \
-  -d '{"username":"testuser","password":"password123"}'
-```
-
-### Добавление пароля
-```bash
-curl -X POST http://localhost:8080/passwords \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <your-token>" \
-  -d '{"resourceName":"example.com","username":"user@example.com","password":"secret123","notes":"Personal account"}'
-```
-
-### Получение списка паролей
-```bash
-curl -X GET http://localhost:8080/passwords \
-  -H "Authorization: Bearer <your-token>"
-```
-
-### Обновление настроек
-```bash
-curl -X PUT http://localhost:8080/settings \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <your-token>" \
-  -d '{"autoLogoutMinutes":60}'
-```
-
-### Изменение мастер-пароля
-```bash
-curl -X PUT http://localhost:8080/change-master-password \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <your-token>" \
-  -d '{"oldMasterPassword":"oldpass123","newMasterPassword":"newpass123"}'
-```
-
-### Получение пароля по ID
-```bash
-curl -X GET http://localhost:8080/passwords/1 \
-  -H "Authorization: Bearer <your-token>"
-```
-
-### Удаление пароля
-```bash
-curl -X DELETE http://localhost:8080/passwords/1 \
-  -H "Authorization: Bearer <your-token>"
-```
