@@ -199,11 +199,12 @@ fun Application.module() {
 }
 
 private fun generateToken(userId: Int, config: ApplicationConfig): String {
+    val jwtLifetimeMinutes = config.propertyOrNull("ktor.security.jwt.lifetimeMinutes")?.getString()?.toLongOrNull() ?: 60L
     val token = JWT.create()
         .withAudience(config.property("ktor.security.jwt.audience").getString())
         .withIssuer(config.property("ktor.security.jwt.issuer").getString())
         .withClaim("userId", userId)
-        .withExpiresAt(Date(System.currentTimeMillis() + 60000))
+        .withExpiresAt(Date(System.currentTimeMillis() + jwtLifetimeMinutes * 60 * 1000))
         .sign(Algorithm.HMAC256(config.property("ktor.security.jwt.secret").getString()))
     return token
 } 
