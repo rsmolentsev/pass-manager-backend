@@ -60,4 +60,10 @@ data class PasswordEntryRequest(
 @Serializable
 data class SettingsUpdateRequest(
     val autoLogoutMinutes: Int
+)
+
+@Serializable
+data class ChangeMasterPasswordRequest(
+    val oldMasterPassword: String,
+    val newMasterPassword: String
 ) 

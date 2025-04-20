@@ -143,6 +143,31 @@ fun Application.module() {
                 call.respond(entries)
             }
 
+            get("/passwords/{id}") {
+                val principal = call.principal<JWTPrincipal>()!!
+                val userId = principal.payload.getClaim("userId").asInt()
+                val entryId = call.parameters["id"]?.toIntOrNull() ?: throw BadRequestException("Invalid ID")
+
+                val entry = DatabaseFactory.dbQuery {
+                    PasswordEntries.select { 
+                        (PasswordEntries.id eq entryId) and (PasswordEntries.userId eq userId) 
+                    }.firstOrNull()
+                } ?: throw NotFoundException("Password entry not found")
+
+                call.respond(
+                    PasswordEntry(
+                        id = entry[PasswordEntries.id].value,
+                        userId = entry[PasswordEntries.userId].value,
+                        resourceName = entry[PasswordEntries.resourceName],
+                        username = entry[PasswordEntries.username],
+                        encryptedPassword = entry[PasswordEntries.encryptedPassword],
+                        notes = entry[PasswordEntries.notes],
+                        createdAt = entry[PasswordEntries.createdAt],
+                        updatedAt = entry[PasswordEntries.updatedAt]
+                    )
+                )
+            }
+
             post("/passwords") {
                 val principal = call.principal<JWTPrincipal>()!!
                 val userId = principal.payload.getClaim("userId").asInt()
@@ -165,6 +190,74 @@ fun Application.module() {
                 call.respond(HttpStatusCode.Created, mapOf("id" to entryId.value))
             }
 
+            put("/passwords/{id}") {
+                val principal = call.principal<JWTPrincipal>()!!
+                val userId = principal.payload.getClaim("userId").asInt()
+                val entryId = call.parameters["id"]?.toIntOrNull() ?: throw BadRequestException("Invalid ID")
+                val request = call.receive<PasswordEntryRequest>()
+
+                val encryptedPassword = SecurityUtils.encryptPassword(request.password, request.password)
+
+                val updated = DatabaseFactory.dbQuery {
+                    PasswordEntries.update({ 
+                        (PasswordEntries.id eq entryId) and (PasswordEntries.userId eq userId) 
+                    }) {
+                        it[resourceName] = request.resourceName
+                        it[username] = request.username
+                        it[PasswordEntries.encryptedPassword] = encryptedPassword
+                        it[notes] = request.notes
+                        it[updatedAt] = Instant.now()
+                    }
+                }
+
+                if (updated == 0) {
+                    throw NotFoundException("Password entry not found")
+                }
+
+                call.respond(HttpStatusCode.OK)
+            }
+
+            delete("/passwords/{id}") {
+                val principal = call.principal<JWTPrincipal>()!!
+                val userId = principal.payload.getClaim("userId").asInt()
+                val entryId = call.parameters["id"]?.toIntOrNull() ?: throw BadRequestException("Invalid ID")
+
+                val deleted = DatabaseFactory.dbQuery {
+                    PasswordEntries.deleteWhere { 
+                        (PasswordEntries.id eq entryId) and (PasswordEntries.userId eq userId) 
+                    }
+                }
+
+                if (deleted == 0) {
+                    throw NotFoundException("Password entry not found")
+                }
+
+                call.respond(HttpStatusCode.OK)
+            }
+
+            put("/change-master-password") {
+                val principal = call.principal<JWTPrincipal>()!!
+                val userId = principal.payload.getClaim("userId").asInt()
+                val request = call.receive<ChangeMasterPasswordRequest>()
+
+                val user = DatabaseFactory.dbQuery {
+                    Users.select { Users.id eq userId }.firstOrNull()
+                } ?: throw NotFoundException("User not found")
+
+                if (!SecurityUtils.verifyPassword(request.oldMasterPassword, user[Users.masterPassword])) {
+                    throw UnauthorizedException("Invalid current password")
+                }
+
+                val newHashedPassword = SecurityUtils.hashPassword(request.newMasterPassword)
+                DatabaseFactory.dbQuery {
+                    Users.update({ Users.id eq userId }) {
+                        it[masterPassword] = newHashedPassword
+                    }
+                }
+
+                call.respond(HttpStatusCode.OK)
+            }
+
             // Settings routes
             get("/settings") {
                 val userId = call.principal<JWTPrincipal>()?.payload?.getClaim("userId")?.asInt() ?: throw UnauthorizedException()
@@ -183,7 +276,7 @@ fun Application.module() {
                 call.respond(settings)
             }
 
-            post("/settings") {
+            put("/settings") {
                 val userId = call.principal<JWTPrincipal>()?.payload?.getClaim("userId")?.asInt() ?: throw UnauthorizedException()
                 val request = call.receive<SettingsUpdateRequest>()
                 DatabaseFactory.dbQuery {
@@ -199,7 +292,7 @@ fun Application.module() {
 }
 
 private fun generateToken(userId: Int, config: ApplicationConfig): String {
-    val jwtLifetimeMinutes = config.propertyOrNull("ktor.security.jwt.lifetimeMinutes")?.getString()?.toLongOrNull() ?: 60L
+    val jwtLifetimeMinutes = config.propertyOrNull("ktor.security.jwt.lifetimeMinutes")?.getString().toInt()
     val token = JWT.create()
         .withAudience(config.property("ktor.security.jwt.audience").getString())
         .withIssuer(config.property("ktor.security.jwt.issuer").getString())
