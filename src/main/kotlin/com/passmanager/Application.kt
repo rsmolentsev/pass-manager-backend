@@ -22,6 +22,7 @@ import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import java.time.Instant
 import java.util.*
 
@@ -245,7 +246,7 @@ fun Application.module() {
                 } ?: throw NotFoundException("User not found")
 
                 if (!SecurityUtils.verifyPassword(request.oldMasterPassword, user[Users.masterPassword])) {
-                    throw UnauthorizedException("Invalid current password")
+                    throw UnauthorizedException()
                 }
 
                 val newHashedPassword = SecurityUtils.hashPassword(request.newMasterPassword)
@@ -292,7 +293,7 @@ fun Application.module() {
 }
 
 private fun generateToken(userId: Int, config: ApplicationConfig): String {
-    val jwtLifetimeMinutes = config.propertyOrNull("ktor.security.jwt.lifetimeMinutes")?.getString().toInt()
+    val jwtLifetimeMinutes = config.propertyOrNull("ktor.security.jwt.lifetimeMinutes")?.getString()?.toIntOrNull() ?: 60
     val token = JWT.create()
         .withAudience(config.property("ktor.security.jwt.audience").getString())
         .withIssuer(config.property("ktor.security.jwt.issuer").getString())
