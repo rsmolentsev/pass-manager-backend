@@ -214,18 +214,28 @@ curl -X PUT http://localhost:8080/settings \
 
 ```
 src/main/kotlin/com/passmanager/
-├── Application.kt          # Точка входа в приложение
+├── Application.kt          # Точка входа в приложение, содержит маршрутизацию и обработку запросов
+├── config/
+│   └── SwaggerConfig.kt   # Конфигурация Swagger UI
 ├── database/
-│   ├── Database.kt        # Конфигурация базы данных
 │   └── Tables.kt          # Определения таблиц базы данных
+├── exceptions/
+│   └── Exceptions.kt      # Пользовательские исключения (BadRequestException, UnauthorizedException, NotFoundException)
 ├── models/
-│   └── Models.kt          # Модели данных
-├── plugins/
-│   ├── Authentication.kt  # Плагин аутентификации
-│   ├── Routing.kt         # Определения маршрутов
-│   └── Serialization.kt   # JSON сериализация
+│   └── Models.kt          # Модели данных (User, PasswordEntry, UserSettings, LoginRequest, RegisterRequest, PasswordEntryRequest, SettingsUpdateRequest, ChangeMasterPasswordRequest)
 └── utils/
-    └── DatabaseFactory.kt # Фабрика подключений к базе данных
+    ├── DatabaseFactory.kt # Фабрика подключений к базе данных
+    ├── SecurityUtils.kt   # Утилиты для работы с безопасностью (шифрование, хеширование)
+    └── InstantSerializer.kt # Сериализатор для работы с датами
+
+src/main/resources/
+├── application.conf       # Конфигурация приложения
+└── openapi/
+    └── documentation.yaml # OpenAPI спецификация
+
+build.gradle.kts          # Конфигурация сборки
+docker-compose.yml        # Конфигурация Docker Compose
+Dockerfile               # Конфигурация Docker
 ```
 
 ## Установка и запуск
