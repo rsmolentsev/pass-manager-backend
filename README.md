@@ -75,6 +75,7 @@ JWT_LIFETIME_MINUTES=60
 ### Управление паролями
 
 - `GET /passwords` - Получение всех паролей (требуется аутентификация)
+- `GET /passwords/{id}` - Получение пароля по ID (требуется аутентификация)
 - `POST /passwords` - Добавление нового пароля (требуется аутентификация)
   ```json
   {
@@ -94,7 +95,6 @@ JWT_LIFETIME_MINUTES=60
   }
   ```
 - `DELETE /passwords/{id}` - Удаление пароля (требуется аутентификация)
-- `GET /passwords/{id}` - Получение пароля по ID (требуется аутентификация)
 
 ### Настройки пользователя
 
@@ -105,6 +105,85 @@ JWT_LIFETIME_MINUTES=60
     "autoLogoutMinutes": number
   }
   ```
+
+## Примеры запросов
+
+### Регистрация пользователя
+```bash
+curl -X POST http://localhost:8080/register \
+  -H "Content-Type: application/json" \
+  -d '{"username":"testuser","masterPassword":"password123"}'
+```
+
+### Вход в систему
+```bash
+curl -X POST http://localhost:8080/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"testuser","masterPassword":"password123"}'
+```
+
+### Добавление пароля
+```bash
+curl -X POST http://localhost:8080/passwords \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <your-token>" \
+  -d '{"resourceName":"example.com","username":"user@example.com","password":"secret123","notes":"Personal account"}'
+```
+
+### Получение списка паролей
+```bash
+curl -X GET http://localhost:8080/passwords \
+  -H "Authorization: Bearer <your-token>"
+```
+
+### Получение пароля по ID
+```bash
+curl -X GET http://localhost:8080/passwords/1 \
+  -H "Authorization: Bearer <your-token>"
+```
+
+### Обновление пароля
+```bash
+curl -X PUT http://localhost:8080/passwords/1 \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <your-token>" \
+  -d '{"resourceName":"example.com","username":"user@example.com","password":"newsecret123","notes":"Updated account"}'
+```
+
+### Удаление пароля
+```bash
+curl -X DELETE http://localhost:8080/passwords/1 \
+  -H "Authorization: Bearer <your-token>"
+```
+
+### Изменение мастер-пароля
+```bash
+curl -X PUT http://localhost:8080/change-master-password \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <your-token>" \
+  -d '{"oldMasterPassword":"oldpass123","newMasterPassword":"newpass123"}'
+```
+
+### Обновление настроек
+```bash
+curl -X PUT http://localhost:8080/settings \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <your-token>" \
+  -d '{"autoLogoutMinutes":60}'
+```
+
+## Безопасность
+
+- Все пароли хешируются с использованием BCrypt
+- Хранение паролей в базе данных зашифровано с использованием AES
+- JWT токены используются для аутентификации
+- CORS настроен для безопасного взаимодействия с клиентским приложением
+- Секретные данные хранятся в переменных окружения
+
+### Данные
+
+- Данные PostgreSQL сохраняются в именованном томе `postgres_data`
+- Конфигурация приложения монтируется из локального файла
 
 ## Конфигурация
 
@@ -275,16 +354,3 @@ curl -X GET http://localhost:8080/passwords/1 \
 curl -X DELETE http://localhost:8080/passwords/1 \
   -H "Authorization: Bearer <your-token>"
 ```
-
-## Безопасность
-
-- Все пароли хешируются с использованием BCrypt
-- Хранение паролей в базе данных зашифровано с использованием AES
-- JWT токены используются для аутентификации
-- CORS настроен для безопасного взаимодействия с клиентским приложением
-- Секретные данные хранятся в переменных окружения
-
-### Данные
-
-- Данные PostgreSQL сохраняются в именованном томе `postgres_data`
-- Конфигурация приложения монтируется из локального файла
