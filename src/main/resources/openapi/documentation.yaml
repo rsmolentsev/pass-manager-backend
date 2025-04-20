@@ -1,0 +1,229 @@
+openapi: 3.0.1
+info:
+  title: Password Manager API
+  description: API for managing passwords and user settings
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+paths:
+  /register:
+    post:
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    description: User ID
+        '409':
+          description: Username already exists
+  /login:
+    post:
+      summary: Login with username and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: JWT token
+        '401':
+          description: Invalid credentials
+  /passwords:
+    get:
+      summary: Get all password entries
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of password entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PasswordEntry'
+    post:
+      summary: Create a new password entry
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordEntryRequest'
+      responses:
+        '201':
+          description: Password entry created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    description: Password entry ID
+  /settings:
+    get:
+      summary: Get user settings
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSettings'
+    post:
+      summary: Update user settings
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SettingsUpdateRequest'
+      responses:
+        '200':
+          description: Settings updated successfully
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    RegisterRequest:
+      type: object
+      required:
+        - username
+        - masterPassword
+      properties:
+        username:
+          type: string
+          description: Username
+        masterPassword:
+          type: string
+          description: Master password
+    LoginRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          description: Username
+        password:
+          type: string
+          description: Master password
+    PasswordEntry:
+      type: object
+      required:
+        - id
+        - userId
+        - resourceName
+        - username
+        - encryptedPassword
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: integer
+          description: Password entry ID
+        userId:
+          type: integer
+          description: User ID
+        resourceName:
+          type: string
+          description: Resource name (e.g., website URL)
+        username:
+          type: string
+          description: Username for the resource
+        encryptedPassword:
+          type: string
+          description: Encrypted password
+        notes:
+          type: string
+          description: Additional notes
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+    PasswordEntryRequest:
+      type: object
+      required:
+        - resourceName
+        - username
+        - password
+      properties:
+        resourceName:
+          type: string
+          description: Resource name (e.g., website URL)
+        username:
+          type: string
+          description: Username for the resource
+        password:
+          type: string
+          description: Password to encrypt
+        notes:
+          type: string
+          description: Additional notes
+    UserSettings:
+      type: object
+      required:
+        - id
+        - userId
+        - autoLogoutMinutes
+        - updatedAt
+      properties:
+        id:
+          type: integer
+          description: Settings ID
+        userId:
+          type: integer
+          description: User ID
+        autoLogoutMinutes:
+          type: integer
+          description: Auto logout time in minutes
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+    SettingsUpdateRequest:
+      type: object
+      required:
+        - autoLogoutMinutes
+      properties:
+        autoLogoutMinutes:
+          type: integer
+          description: Auto logout time in minutes 
