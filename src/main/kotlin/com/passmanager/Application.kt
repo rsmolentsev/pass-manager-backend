@@ -134,7 +134,7 @@ fun Application.module() {
                                 userId = it[PasswordEntries.userId].value,
                                 resourceName = it[PasswordEntries.resourceName],
                                 username = it[PasswordEntries.username],
-                                encryptedPassword = it[PasswordEntries.encryptedPassword],
+                                password = it[PasswordEntries.encryptedPassword],
                                 notes = it[PasswordEntries.notes],
                                 createdAt = it[PasswordEntries.createdAt],
                                 updatedAt = it[PasswordEntries.updatedAt]
@@ -161,7 +161,7 @@ fun Application.module() {
                         userId = entry[PasswordEntries.userId].value,
                         resourceName = entry[PasswordEntries.resourceName],
                         username = entry[PasswordEntries.username],
-                        encryptedPassword = entry[PasswordEntries.encryptedPassword],
+                        password = entry[PasswordEntries.encryptedPassword],
                         notes = entry[PasswordEntries.notes],
                         createdAt = entry[PasswordEntries.createdAt],
                         updatedAt = entry[PasswordEntries.updatedAt]

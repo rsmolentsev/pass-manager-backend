@@ -20,7 +20,7 @@ data class PasswordEntry(
     val userId: Int,
     val resourceName: String,
     val username: String,
-    val encryptedPassword: String,
+    val password: String,
     val notes: String?,
     @Serializable(with = InstantSerializer::class)
     val createdAt: Instant,
