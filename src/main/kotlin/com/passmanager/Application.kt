@@ -246,7 +246,8 @@ fun Application.module() {
                 } ?: throw NotFoundException("User not found")
 
                 if (!SecurityUtils.verifyPassword(request.oldMasterPassword, user[Users.masterPassword])) {
-                    throw UnauthorizedException()
+                    call.respond(HttpStatusCode.Unauthorized, "Invalid current password")
+                    return@put
                 }
 
                 val newHashedPassword = SecurityUtils.hashPassword(request.newMasterPassword)
