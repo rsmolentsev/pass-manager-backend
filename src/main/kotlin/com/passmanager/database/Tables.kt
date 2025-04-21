@@ -6,6 +6,7 @@ import org.jetbrains.exposed.sql.javatime.timestamp
 object Users : IntIdTable() {
     val username = varchar("username", 50).uniqueIndex()
     val masterPassword = varchar("master_password", 255)
+    val encryptedMasterPassword = varchar("encrypted_master_password", 255)
     val createdAt = timestamp("created_at")
 }
 

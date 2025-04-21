@@ -54,12 +54,23 @@ data class PasswordEntryRequest(
     val resourceName: String,
     val username: String,
     val password: String,
+    val masterPassword: String,
     val notes: String? = null
 )
 
 @Serializable
 data class SettingsUpdateRequest(
     val autoLogoutMinutes: Int
+)
+
+@Serializable
+data class DecryptPasswordRequest(
+    val masterPassword: String
+)
+
+@Serializable
+data class DecryptedPasswordResponse(
+    val password: String
 )
 
 @Serializable

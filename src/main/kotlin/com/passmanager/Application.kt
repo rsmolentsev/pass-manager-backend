@@ -85,10 +85,14 @@ fun Application.module() {
             }
 
             val hashedPassword = SecurityUtils.hashPassword(request.masterPassword)
+            // Encrypt master password with itself
+            val encryptedMasterPassword = SecurityUtils.encryptPassword(request.masterPassword, request.masterPassword)
+            
             val userId = DatabaseFactory.dbQuery {
                 Users.insert {
                     it[username] = request.username
                     it[masterPassword] = hashedPassword
+                    it[Users.encryptedMasterPassword] = encryptedMasterPassword
                     it[createdAt] = Instant.now()
                 } get Users.id
             }
@@ -174,7 +178,8 @@ fun Application.module() {
                 val userId = principal.payload.getClaim("userId").asInt()
                 val request = call.receive<PasswordEntryRequest>()
 
-                val encryptedPassword = SecurityUtils.encryptPassword(request.password, request.password)
+                // Get user's master password from the request
+                val encryptedPassword = SecurityUtils.encryptPassword(request.password, request.masterPassword)
 
                 val entryId = DatabaseFactory.dbQuery {
                     PasswordEntries.insert {
@@ -197,7 +202,8 @@ fun Application.module() {
                 val entryId = call.parameters["id"]?.toIntOrNull() ?: throw BadRequestException("Invalid ID")
                 val request = call.receive<PasswordEntryRequest>()
 
-                val encryptedPassword = SecurityUtils.encryptPassword(request.password, request.password)
+                // Get user's master password from the request
+                val encryptedPassword = SecurityUtils.encryptPassword(request.password, request.masterPassword)
 
                 val updated = DatabaseFactory.dbQuery {
                     PasswordEntries.update({ 
@@ -234,6 +240,22 @@ fun Application.module() {
                 }
 
                 call.respond(HttpStatusCode.OK)
+            }
+
+            post("/passwords/{id}/decrypt") {
+                val principal = call.principal<JWTPrincipal>()!!
+                val userId = principal.payload.getClaim("userId").asInt()
+                val entryId = call.parameters["id"]?.toIntOrNull() ?: throw BadRequestException("Invalid ID")
+                val request = call.receive<DecryptPasswordRequest>()
+
+                val entry = DatabaseFactory.dbQuery {
+                    PasswordEntries.select { 
+                        (PasswordEntries.id eq entryId) and (PasswordEntries.userId eq userId) 
+                    }.firstOrNull()
+                } ?: throw NotFoundException("Password entry not found")
+
+                val decryptedPassword = SecurityUtils.decryptPassword(entry[PasswordEntries.encryptedPassword], request.masterPassword)
+                call.respond(DecryptedPasswordResponse(decryptedPassword))
             }
 
             put("/change-master-password") {
