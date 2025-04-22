@@ -9,10 +9,23 @@
 ## Возможности
 
 - Аутентификация пользователей с использованием JWT токенов
-- Безопасное хранение паролей с шифрованием
+- Безопасное хранение паролей с шифрованием AES
 - Управление настройками пользователя
 - Настраиваемое время автоматического выхода
 - Поддержка Docker для простого развертывания
+- Swagger UI для документации API
+- CORS поддержка для безопасного взаимодействия с клиентским приложением
+
+## Технологии
+
+- Kotlin 1.9.22
+- Ktor 2.3.8
+- PostgreSQL 15
+- Exposed ORM 0.45.0
+- JWT Auth 4.4.0
+- BCrypt для хеширования паролей
+- HikariCP для пула соединений
+- Swagger UI для документации API
 
 ## Требования
 
@@ -28,6 +41,7 @@
 # Настройки базы данных
 DB_USER=postgres
 DB_PASSWORD=postgres
+DB_URL=jdbc:postgresql://localhost:5432/pass_manager
 
 # Настройки JWT
 JWT_SECRET=your-secret-key
@@ -43,6 +57,7 @@ JWT_LIFETIME_MINUTES=60
 
 2. Приложение будет доступно по адресу: `http://localhost:8080`
 3. База данных будет доступна по адресу: `localhost:5432`
+4. Swagger UI будет доступен по адресу: `http://localhost:8080/swagger`
 
 ## API Endpoints
 
@@ -52,7 +67,7 @@ JWT_LIFETIME_MINUTES=60
   ```json
   {
     "username": "string",
-    "masterPassword": "string"
+    "password": "string"
   }
   ```
 
@@ -60,7 +75,7 @@ JWT_LIFETIME_MINUTES=60
   ```json
   {
     "username": "string",
-    "masterPassword": "string"
+    "password": "string"
   }
   ```
 
@@ -82,7 +97,8 @@ JWT_LIFETIME_MINUTES=60
     "resourceName": "string",
     "username": "string",
     "password": "string",
-    "notes": "string"
+    "notes": "string",
+    "masterPassword": "string"
   }
   ```
 - `PUT /passwords/{id}` - Обновление пароля (требуется аутентификация)
@@ -91,10 +107,17 @@ JWT_LIFETIME_MINUTES=60
     "resourceName": "string",
     "username": "string",
     "password": "string",
-    "notes": "string"
+    "notes": "string",
+    "masterPassword": "string"
   }
   ```
 - `DELETE /passwords/{id}` - Удаление пароля (требуется аутентификация)
+- `POST /passwords/{id}/decrypt` - Дешифрование пароля
+  ```json
+  {
+    "masterPassword": "string"
+  }
+  ```
 
 ### Настройки пользователя
 
@@ -105,102 +128,6 @@ JWT_LIFETIME_MINUTES=60
     "autoLogoutMinutes": number
   }
   ```
-
-## Примеры запросов
-
-### Swagger UI
-
-Документация API доступна по адресу: `http://localhost:8080/swagger`
-
-### Регистрация пользователя
-```bash
-curl -X POST http://localhost:8080/register \
-  -H "Content-Type: application/json" \
-  -d '{"username":"testuser","masterPassword":"password123"}'
-```
-
-### Вход в систему
-```bash
-curl -X POST http://localhost:8080/login \
-  -H "Content-Type: application/json" \
-  -d '{"username":"testuser","password":"password123"}'
-```
-
-### Добавление пароля
-```bash
-curl -X POST http://localhost:8080/passwords \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <your-token>" \
-  -d '{"resourceName":"example.com","username":"user@example.com","password":"secret123","notes":"Personal account"}'
-```
-
-### Получение списка паролей
-```bash
-curl -X GET http://localhost:8080/passwords \
-  -H "Authorization: Bearer <your-token>"
-```
-
-### Получение пароля по ID
-```bash
-curl -X GET http://localhost:8080/passwords/1 \
-  -H "Authorization: Bearer <your-token>"
-```
-
-### Обновление пароля
-```bash
-curl -X PUT http://localhost:8080/passwords/1 \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <your-token>" \
-  -d '{"resourceName":"example.com","username":"user@example.com","password":"newsecret123","notes":"Updated account"}'
-```
-
-### Удаление пароля
-```bash
-curl -X DELETE http://localhost:8080/passwords/1 \
-  -H "Authorization: Bearer <your-token>"
-```
-
-### Изменение мастер-пароля
-```bash
-curl -X PUT http://localhost:8080/change-master-password \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <your-token>" \
-  -d '{"oldMasterPassword":"oldpass123","newMasterPassword":"newpass123"}'
-```
-
-### Обновление настроек
-```bash
-curl -X PUT http://localhost:8080/settings \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <your-token>" \
-  -d '{"autoLogoutMinutes":60}'
-```
-
-## Безопасность
-
-- Все пароли хешируются с использованием BCrypt
-- Хранение паролей в базе данных зашифровано с использованием AES
-- JWT токены используются для аутентификации
-- CORS настроен для безопасного взаимодействия с клиентским приложением
-- Секретные данные хранятся в переменных окружения
-
-### Данные
-
-- Данные PostgreSQL сохраняются в именованном томе `postgres_data`
-- Конфигурация приложения монтируется из локального файла
-
-## Конфигурация
-
-Приложение можно настроить через переменные окружения или `application.conf`:
-
-### Настройки базы данных
-- `DB_URL` - URL подключения к базе данных
-- `DB_USER` - Имя пользователя базы данных
-- `DB_PASSWORD` - Пароль базы данных
-
-### Настройки JWT
-- `JWT_SECRET` - Секретный ключ для подписи JWT токенов
-- `JWT_LIFETIME_MINUTES` - Время жизни токена в минутах
 
 ## Функции безопасности
 
@@ -220,22 +147,18 @@ src/main/kotlin/com/passmanager/
 ├── database/
 │   └── Tables.kt          # Определения таблиц базы данных
 ├── exceptions/
-│   └── Exceptions.kt      # Пользовательские исключения (BadRequestException, UnauthorizedException, NotFoundException)
+│   └── Exceptions.kt      # Пользовательские исключения
 ├── models/
-│   └── Models.kt          # Модели данных (User, PasswordEntry, UserSettings, LoginRequest, RegisterRequest, PasswordEntryRequest, SettingsUpdateRequest, ChangeMasterPasswordRequest)
+│   └── Models.kt          # Модели данных
 └── utils/
     ├── DatabaseFactory.kt # Фабрика подключений к базе данных
-    ├── SecurityUtils.kt   # Утилиты для работы с безопасностью (шифрование, хеширование)
+    ├── SecurityUtils.kt   # Утилиты для работы с безопасностью
     └── InstantSerializer.kt # Сериализатор для работы с датами
 
 src/main/resources/
 ├── application.conf       # Конфигурация приложения
 └── openapi/
     └── documentation.yaml # OpenAPI спецификация
-
-build.gradle.kts          # Конфигурация сборки
-docker-compose.yml        # Конфигурация Docker Compose
-Dockerfile               # Конфигурация Docker
 ```
 
 ## Установка и запуск
@@ -279,7 +202,14 @@ cp example.env .env
 
 3. Запустите приложение:
 ```bash
-docker-compose up -d
+docker-compose up --build
 ```
 
-4. Приложение будет доступно по адресу: `http://localhost:8080`
+## Документация API
+
+Полная документация API доступна через Swagger UI по адресу `http://localhost:8080/swagger`. Документация включает:
+- Описание всех доступных эндпоинтов
+- Схемы запросов и ответов
+- Примеры использования
+- Требования аутентификации
+

@@ -1,7 +1,14 @@
 openapi: 3.0.1
 info:
   title: Password Manager API
-  description: API for managing passwords and user settings
+  description: |
+    Secure API for managing passwords and user settings.
+    Features:
+    - User registration and authentication
+    - Secure password storage with AES encryption
+    - Master password management
+    - Password entry CRUD operations
+    - User settings management
   version: 1.0.0
 servers:
   - url: http://localhost:8080
@@ -10,6 +17,9 @@ paths:
   /register:
     post:
       summary: Register a new user
+      description: Creates a new user account with a master password
+      tags:
+        - Authentication
       requestBody:
         required: true
         content:
@@ -27,11 +37,16 @@ paths:
                   id:
                     type: integer
                     description: User ID
+        '400':
+          description: Invalid request parameters
         '409':
           description: Username already exists
   /login:
     post:
       summary: Login with username and password
+      description: Authenticates a user and returns a JWT token
+      tags:
+        - Authentication
       requestBody:
         required: true
         content:
@@ -48,12 +63,17 @@ paths:
                 properties:
                   token:
                     type: string
-                    description: JWT token
+                    description: JWT token for authentication
         '401':
           description: Invalid credentials
+        '400':
+          description: Invalid request parameters
   /change-master-password:
     put:
       summary: Change master password
+      description: Updates the user's master password
+      tags:
+        - Authentication
       security:
         - bearerAuth: []
       requestBody:
@@ -66,10 +86,15 @@ paths:
         '200':
           description: Master password changed successfully
         '401':
-          description: Invalid current password
+          description: Invalid current password or unauthorized
+        '400':
+          description: Invalid request parameters
   /passwords:
     get:
       summary: Get all password entries
+      description: Retrieves all password entries for the authenticated user
+      tags:
+        - Passwords
       security:
         - bearerAuth: []
       responses:
@@ -81,8 +106,13 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/PasswordEntry'
+        '401':
+          description: Unauthorized
     post:
       summary: Create a new password entry
+      description: Creates a new password entry for the authenticated user
+      tags:
+        - Passwords
       security:
         - bearerAuth: []
       requestBody:
@@ -102,9 +132,16 @@ paths:
                   id:
                     type: integer
                     description: Password entry ID
+        '401':
+          description: Unauthorized
+        '400':
+          description: Invalid request parameters
   /passwords/{id}:
     get:
       summary: Get password entry by ID
+      description: Retrieves a specific password entry by its ID
+      tags:
+        - Passwords
       security:
         - bearerAuth: []
       parameters:
@@ -113,6 +150,7 @@ paths:
           required: true
           schema:
             type: integer
+          description: Password entry ID
       responses:
         '200':
           description: Password entry
@@ -120,10 +158,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PasswordEntry'
+        '401':
+          description: Unauthorized
         '404':
           description: Password entry not found
     put:
       summary: Update password entry
+      description: Updates an existing password entry
+      tags:
+        - Passwords
       security:
         - bearerAuth: []
       parameters:
@@ -132,6 +175,7 @@ paths:
           required: true
           schema:
             type: integer
+          description: Password entry ID
       requestBody:
         required: true
         content:
@@ -141,10 +185,17 @@ paths:
       responses:
         '200':
           description: Password entry updated successfully
+        '401':
+          description: Unauthorized
         '404':
           description: Password entry not found
+        '400':
+          description: Invalid request parameters
     delete:
       summary: Delete password entry
+      description: Deletes a password entry
+      tags:
+        - Passwords
       security:
         - bearerAuth: []
       parameters:
@@ -153,14 +204,58 @@ paths:
           required: true
           schema:
             type: integer
+          description: Password entry ID
       responses:
         '200':
           description: Password entry deleted successfully
+        '401':
+          description: Unauthorized
         '404':
           description: Password entry not found
+  /passwords/{id}/decrypt:
+    post:
+      summary: Decrypt password entry
+      description: Decrypts a password entry
+      tags:
+        - Passwords
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Password entry ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                masterPassword:
+                  type: string
+                  description: Master password of the current user
+      responses:
+        '200':
+          description: Decrypted password entry
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  password:
+                    type: string
+                    description: Decrypted password
+        '401':
+          description: Unauthorized
   /settings:
     get:
       summary: Get user settings
+      description: Retrieves the current user's settings
+      tags:
+        - Settings
       security:
         - bearerAuth: []
       responses:
@@ -170,8 +265,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserSettings'
+        '401':
+          description: Unauthorized
     put:
       summary: Update user settings
+      description: Updates the current user's settings
+      tags:
+        - Settings
       security:
         - bearerAuth: []
       requestBody:
@@ -183,25 +283,30 @@ paths:
       responses:
         '200':
           description: Settings updated successfully
+        '401':
+          description: Unauthorized
+        '400':
+          description: Invalid request parameters
 components:
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
+      description: JWT token for authentication
   schemas:
     RegisterRequest:
       type: object
       required:
         - username
-        - masterPassword
+        - password
       properties:
         username:
           type: string
-          description: Username
-        masterPassword:
+          description: Username (3-50 characters)
+        password:
           type: string
-          description: Master password
+          description: Master password (8-100 characters)
     LoginRequest:
       type: object
       required:
@@ -225,7 +330,7 @@ components:
           description: Current master password
         newMasterPassword:
           type: string
-          description: New master password
+          description: New master password (8-100 characters)
     PasswordEntry:
       type: object
       required:
@@ -233,9 +338,7 @@ components:
         - userId
         - resourceName
         - username
-        - encryptedPassword
-        - createdAt
-        - updatedAt
+        - password
       properties:
         id:
           type: integer
@@ -249,12 +352,12 @@ components:
         username:
           type: string
           description: Username for the resource
-        encryptedPassword:
+        password:
           type: string
-          description: Encrypted password
+          description: Encrypted password (AES encrypted)
         notes:
           type: string
-          description: Additional notes
+          description: Optional notes about the password entry
         createdAt:
           type: string
           format: date-time
@@ -269,6 +372,8 @@ components:
         - resourceName
         - username
         - password
+        - notes
+        - masterPassword
       properties:
         resourceName:
           type: string
@@ -278,21 +383,18 @@ components:
           description: Username for the resource
         password:
           type: string
-          description: Password to encrypt
+          description: Password for the resource
         notes:
           type: string
-          description: Additional notes
+          description: Optional notes about the password entry
+        masterPassword:
+          type: string
+          description: Master password of the current user
     UserSettings:
       type: object
       required:
-        - id
-        - userId
         - autoLogoutMinutes
-        - updatedAt
       properties:
-        id:
-          type: integer
-          description: Settings ID
         userId:
           type: integer
           description: User ID
