@@ -59,6 +59,29 @@ JWT_LIFETIME_MINUTES=60
 3. База данных будет доступна по адресу: `localhost:5432`
 4. Swagger UI будет доступен по адресу: `http://localhost:8080/swagger`
 
+## Локальный запуск
+
+1. Клонируйте репозиторий:
+```bash
+git clone <repository-url>
+cd pass-manager-backend
+```
+
+2. Создайте базу данных PostgreSQL:
+```sql
+CREATE DATABASE pass_manager;
+```
+
+3. Настройте конфигурацию в файле `src/main/resources/application.conf`:
+- Укажите правильные параметры подключения к базе данных
+- Измените секретный ключ JWT на свой
+
+4. Соберите и запустите приложение:
+```bash
+./gradlew build
+./gradlew run
+```
+
 ## API Endpoints
 
 ### Аутентификация
@@ -159,50 +182,6 @@ src/main/resources/
 ├── application.conf       # Конфигурация приложения
 └── openapi/
     └── documentation.yaml # OpenAPI спецификация
-```
-
-## Установка и запуск
-
-### Локальный запуск
-
-1. Клонируйте репозиторий:
-```bash
-git clone <repository-url>
-cd pass-manager-backend
-```
-
-2. Создайте базу данных PostgreSQL:
-```sql
-CREATE DATABASE pass_manager;
-```
-
-3. Настройте конфигурацию в файле `src/main/resources/application.conf`:
-- Укажите правильные параметры подключения к базе данных
-- Измените секретный ключ JWT на свой
-
-4. Соберите и запустите приложение:
-```bash
-./gradlew build
-./gradlew run
-```
-
-### Запуск через Docker
-
-1. Клонируйте репозиторий:
-```bash
-git clone <repository-url>
-cd pass-manager-backend
-```
-
-2. Создайте файл `.env` и настройте переменные окружения:
-```bash
-cp example.env .env
-# Отредактируйте .env файл, указав свои значения
-```
-
-3. Запустите приложение:
-```bash
-docker-compose up --build
 ```
 
 ## Документация API
